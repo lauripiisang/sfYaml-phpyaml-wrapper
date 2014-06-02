@@ -19,7 +19,7 @@
 class sfYaml
 {
   static protected
-    $spec = '1.2';
+    $spec = '1.1';
 
   /**
    * Sets the YAML specification version to use.
@@ -28,7 +28,7 @@ class sfYaml
    */
   static public function setSpecVersion($version)
   {
-    if (!in_array($version, array('1.1', '1.2')))
+    if ($version !== '1.2')
     {
       throw new InvalidArgumentException(sprintf('Version %s of the YAML specifications is not supported', $version));
     }
@@ -66,19 +66,10 @@ class sfYaml
    */
   public static function load($input)
   {
-    $file = '';
-
     // if input is a file, process it
     if (strpos($input, "\n") === false && is_file($input))
     {
-      $file = $input;
-
-      ob_start();
-      $retval = include($input);
-      $content = ob_get_clean();
-
-      // if an array is returned by the config file assume it's in plain php form else in YAML
-      $input = is_array($retval) ? $retval : $content;
+      return yaml_parse_file($input, -1);
     }
 
     // if an array is returned by the config file assume it's in plain php form else in YAML
@@ -87,20 +78,7 @@ class sfYaml
       return $input;
     }
 
-    require_once dirname(__FILE__).'/sfYamlParser.php';
-
-    $yaml = new sfYamlParser();
-
-    try
-    {
-      $ret = $yaml->parse($input);
-    }
-    catch (Exception $e)
-    {
-      throw new InvalidArgumentException(sprintf('Unable to parse %s: %s', $file ? sprintf('file "%s"', $file) : 'string', $e->getMessage()));
-    }
-
-    return $ret;
+    return yaml_parse($input);
   }
 
   /**
@@ -114,22 +92,8 @@ class sfYaml
    *
    * @return string A YAML string representing the original PHP array
    */
-  public static function dump($array, $inline = 2)
+  public static function dump($array, $inline = null)
   {
-    require_once dirname(__FILE__).'/sfYamlDumper.php';
-
-    $yaml = new sfYamlDumper();
-
-    return $yaml->dump($array, $inline);
+    return yaml_emit($array);
   }
-}
-
-/**
- * Wraps echo to automatically provide a newline.
- *
- * @param string $string The string to echo with new line
- */
-function echoln($string)
-{
-  echo $string."\n";
 }
